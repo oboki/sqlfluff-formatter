@@ -1,0 +1,125 @@
+{
+  "name": "sqlfluff-formatter",
+  "displayName": "SQLFluff Formatter",
+  "description": "Professional SQL code formatter powered by sqlfluff. Format selected text or entire files with support for 14+ SQL dialects. Configurable via .sqlfluff files or VS Code settings.",
+  "version": "0.1.0",
+  "icon": "img/sqlfluff.png",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "sql",
+    "formatter",
+    "sqlfluff",
+    "format"
+  ],
+  "publisher": "oboki",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oboki/sqlfluff-formatter"
+  },
+  "activationEvents": [
+    "onCommand:sqlfluff-formatter.formatSQL",
+    "onLanguage:sql"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sqlfluff-formatter.formatSQL",
+        "title": "SQLFluff: Format SQL"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "sqlfluff-formatter.formatSQL",
+        "key": "alt+shift+f",
+        "when": "editorLangId == sql"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "SQLFluff Formatter",
+        "properties": {
+          "sqlfluff.pythonPath": {
+            "type": "string",
+            "default": "python",
+            "description": "Path to the Python interpreter (e.g., /usr/bin/python3 or python)"
+          },
+          "sqlfluff.sqlfluffPath": {
+            "type": "string",
+            "default": "sqlfluff",
+            "description": "Path to sqlfluff executable (e.g., /usr/local/bin/sqlfluff or just sqlfluff)"
+          },
+          "sqlfluff.configPath": {
+            "type": "string",
+            "default": "",
+            "description": "Path to .sqlfluff configuration file. If empty, uses workspace root or home directory config"
+          },
+          "sqlfluff.dialect": {
+            "type": "string",
+            "default": "ansi",
+            "description": "SQL dialect (ansi, tsql, mysql, postgresql, snowflake, bigquery, etc.)",
+            "enum": [
+              "ansi",
+              "tsql",
+              "mysql",
+              "postgresql",
+              "snowflake",
+              "bigquery",
+              "oracle",
+              "redshift",
+              "duckdb",
+              "sparksql",
+              "exasol",
+              "hive",
+              "trino",
+              "presto"
+            ]
+          },
+          "sqlfluff.rules": {
+            "type": "object",
+            "default": {},
+            "description": "Override specific sqlfluff rules (e.g., {\"L001\": {\"capitalisation_policy\": \"upper\"}})"
+          },
+          "sqlfluff.excludeRules": {
+            "type": "array",
+            "default": [],
+            "description": "Rules to exclude from formatting (e.g., [\"L009\", \"L027\"])"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.60.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.19.0",
+    "esbuild": "^0.19.0",
+    "eslint": "^8.40.0",
+    "glob": "^10.2.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}

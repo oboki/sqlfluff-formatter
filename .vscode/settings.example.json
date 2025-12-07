@@ -1,0 +1,8 @@
+{
+  "sqlfluff.pythonPath": "python3",
+  "sqlfluff.sqlfluffPath": "sqlfluff",
+  "sqlfluff.dialect": "ansi",
+  "sqlfluff.configPath": "",
+  "sqlfluff.excludeRules": [],
+  "sqlfluff.rules": {}
+}

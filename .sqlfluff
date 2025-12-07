@@ -1,0 +1,62 @@
+# SQLFluff configuration - Default rules
+# Place this file in project root or home directory to use it
+# 
+# Dialect Selection:
+# - ansi: Standard SQL (default, most portable)
+# - postgresql: PostgreSQL
+# - mysql: MySQL
+# - tsql: SQL Server (T-SQL)
+# - snowflake: Snowflake
+# - bigquery: Google BigQuery
+# - oracle: Oracle Database
+# - hive: Apache Hive
+# - sparksql: Apache Spark
+# - duckdb, redshift, exasol, trino, presto: Other dialects
+
+[sqlfluff]
+dialect = ansi
+exclude_rules = L016,L031,L034
+large_file_skip_byte_limit = 0
+indent_unit = space
+indent_size = 2
+
+# Templating: 'raw' for plain SQL, 'jinja' for dbt/templated SQL
+# NOTE: templater setting in .sqlfluff only works in the current working directory
+# For subdirectories, use VS Code settings or command line arguments
+templater = raw
+library_path = plugins
+
+# SQL formatting options
+sql_file_exts = .sql,.dml,.ddl
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+load_macros_from_path = macros
+
+[sqlfluff:layout:type:alias_expression]
+spacing_before = align
+align_within = select_clause
+align_scope = bracketed
+
+[sqlfluff:indentation]
+tab_space_size = 2
+allow_implicit_indents = True
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = upper
+
+[sqlfluff:rules:references.special_chars]
+allow_space_in_identifier = True
+additional_allowed_characters = ['.','(',')','-']
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = upper
+
+[sqlfluff:rules:aliasing.length]
+min_alias_length = 4

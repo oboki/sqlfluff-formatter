@@ -1,0 +1,312 @@
+# SQLFluff Formatter
+
+VS Code extension for formatting SQL files using [sqlfluff](https://www.sqlfluff.com/).
+
+## Features
+
+- **Format SQL on Selection**: Select text and format only the selected SQL
+- **Format Entire File**: Format the entire SQL file if no selection is made
+- **Configurable**: Support for global and local sqlfluff configuration
+- **Multiple Dialects**: Support for various SQL dialects (ANSI, T-SQL, MySQL, PostgreSQL, Snowflake, BigQuery, etc.)
+- **Custom Rules**: Override sqlfluff rules via VS Code settings
+- **Rule Exclusion**: Exclude specific rules from formatting
+
+## Installation
+
+1. Install the extension from VS Code marketplace
+2. Ensure you have sqlfluff 1.0.0 or higher installed locally:
+   ```bash
+   # Install latest sqlfluff
+   pip install --upgrade sqlfluff
+   
+   # Or install specific version
+   pip install sqlfluff>=1.0.0
+   
+   # Verify installation
+   sqlfluff --version
+   ```
+3. Configure Python path in VS Code settings if using custom Python installation
+
+## Configuration
+
+### Basic Settings
+
+Add these settings to your VS Code `settings.json`:
+
+```json
+{
+  "sqlfluff.pythonPath": "python",
+  "sqlfluff.sqlfluffPath": "sqlfluff",
+  "sqlfluff.dialect": "ansi",
+  "sqlfluff.configPath": ""
+}
+```
+
+### How the Extension Resolves Execution
+
+The extension tries three execution methods in priority order:
+
+1. **`sqlfluffPath` configured AND exists** → Execute sqlfluff binary directly
+   - Most reliable and fastest
+   - Requires sqlfluff installed as standalone executable
+
+2. **Falls back if above fails** → Execute `python -m sqlfluff format` via pythonPath
+   - Good compatibility with Python virtual environments
+   - Uses Python's module system to load sqlfluff
+   - Requires `pip install sqlfluff`
+
+3. **Final fallback if both fail** → Use Python API directly
+   - `from sqlfluff.core import Linter` method
+   - Most reliable option (works as long as Python and sqlfluff are installed)
+   - Guarantees formatting will work
+
+**Recommendation**: Set only `pythonPath` to your Python interpreter. The extension will automatically try all three methods and use whatever works on your system.
+
+### Configuration Options
+
+- **pythonPath**: Path to Python interpreter (default: "python")
+  - Example: `/usr/bin/python3` or `C:\\Python39\\python.exe`
+  - Used as fallback when sqlfluffPath is not available
+
+- **sqlfluffPath**: Path to sqlfluff executable (default: "sqlfluff")
+   - Example: `/usr/local/bin/sqlfluff`
+   
+- **dialect**: SQL dialect to use (default: "ansi")
+  - Options: `ansi`, `tsql`, `mysql`, `postgresql`, `snowflake`, `bigquery`, `oracle`, `redshift`, `duckdb`, `sparksql`, `exasol`, `hive`, `trino`, `presto`
+   
+- **configPath**: Path to .sqlfluff configuration file
+  - If empty, uses `.sqlfluff` in workspace root or home directory
+  - Example: `${workspaceFolder}/.sqlfluff` or `/home/user/.sqlfluff`
+   
+- **rules**: Override specific sqlfluff rules
+  - Example:
+    ```json
+    {
+      "sqlfluff.rules": {
+        "L001": { "capitalisation_policy": "upper" },
+        "L003": { "indent_size": 2 }
+      }
+    }
+    ```
+
+- **excludeRules**: Rules to exclude from formatting
+  - Example: `["L009", "L027"]`
+
+## Usage
+
+### Keyboard Shortcut
+- **Alt+Shift+F** (Windows/Linux) or **Option+Shift+F** (macOS): Format SQL
+
+### Command Palette
+1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
+2. Type "SQLFluff: Format SQL"
+3. Press Enter
+
+### Selection-based Formatting
+1. Select the SQL code you want to format
+2. Use the keyboard shortcut or command
+
+### File-wide Formatting
+1. Open a SQL file with no selection
+2. Use the keyboard shortcut or command to format the entire file
+
+## Selecting the Right SQL Dialect
+
+SQLFluff supports many SQL dialects. Choose the one that matches your database system:
+
+### Supported Dialects
+
+| Dialect | Best For | Notes |
+|---------|----------|-------|
+| `ansi` | Standard SQL | Most portable, basic SQL features |
+| `postgresql` | PostgreSQL | Full PostgreSQL syntax support |
+| `mysql` | MySQL | MySQL-specific features |
+| `tsql` | SQL Server | T-SQL specific syntax (DECLARE, etc.) |
+| `snowflake` | Snowflake | Snowflake-specific functions and syntax |
+| `bigquery` | Google BigQuery | BigQuery standard SQL dialect |
+| `oracle` | Oracle Database | Oracle PL/SQL features |
+| `hive` | Apache Hive | Hive SQL dialect |
+| `sparksql` | Apache Spark | Spark SQL features |
+| `duckdb` | DuckDB | DuckDB-specific features |
+| `redshift` | Amazon Redshift | Redshift extensions |
+| `exasol` | Exasol | Exasol-specific SQL |
+| `trino` | Trino | Trino query engine |
+| `presto` | Presto | Presto query engine |
+
+### Troubleshooting Parsing Errors
+
+If you see "[1 templating/parsing errors found" messages:
+
+1. **Check your dialect**: Ensure the `sqlfluff.dialect` setting matches your SQL database
+   - Example: If using Snowflake syntax like `INSERT OVERWRITE`, set dialect to `snowflake`
+   - If using `DECLARE` (T-SQL), set dialect to `tsql`
+
+2. **Try a different dialect**: Some SQL features are only supported in specific dialects
+   - If ANSI dialect fails, try `postgresql` or your actual database system
+
+3. **Update your .sqlfluff file**: Set the correct dialect in your `.sqlfluff` configuration:
+   ```ini
+   [sqlfluff]
+   dialect = snowflake
+   templater = raw
+   ```
+
+4. **Use proper configuration location**: 
+   - Workspace root `.sqlfluff` takes priority over home directory config
+   - VS Code setting `sqlfluff.dialect` overrides all .sqlfluff files
+
+## Configuration Files
+
+### Global Configuration (~/.sqlfluff)
+
+Create a `.sqlfluff` file in your home directory for global SQL formatting rules:
+
+```ini
+[sqlfluff]
+dialect = postgresql
+indent_unit = space
+indent_size = 2
+
+[sqlfluff:rules]
+L001 = { "capitalisation_policy" : "upper" }
+L003 = { "indent_size" : 2 }
+```
+
+### Local Configuration (.sqlfluff in workspace)
+
+Create a `.sqlfluff` file in your workspace root for project-specific rules:
+
+```ini
+[sqlfluff]
+dialect = snowflake
+indent_unit = space
+indent_size = 4
+
+[sqlfluff:indentation]
+indent_unit = space
+indent_size = 4
+
+[sqlfluff:rules]
+L001 = { "capitalisation_policy" : "upper" }
+L009 = { "select_clause_trailing_comma" : "forbid" }
+```
+
+### VS Code Workspace Settings
+
+Override rules for specific projects in `.vscode/settings.json`:
+
+```json
+{
+  "sqlfluff.dialect": "postgresql",
+  "sqlfluff.pythonPath": "/usr/bin/python3",
+  "sqlfluff.excludeRules": ["L009", "L027"],
+  "sqlfluff.rules": {
+    "L001": { "capitalisation_policy": "lower" }
+  }
+}
+```
+
+## Configuration Priority
+
+The extension resolves configuration in this order:
+
+1. **Explicit config path** (`sqlfluff.configPath` in VS Code settings)
+2. **Workspace config** (`.sqlfluff` in workspace root)
+3. **Home directory config** (`~/.sqlfluff`)
+4. **VS Code settings** (`sqlfluff.*` in settings.json)
+
+## Example Workflows
+
+### Setup for PostgreSQL Project
+
+1. Create `.sqlfluff` in your project root:
+   ```ini
+   [sqlfluff]
+   dialect = postgresql
+   indent_unit = space
+   indent_size = 2
+   ```
+
+2. In `.vscode/settings.json`:
+   ```json
+   {
+     "sqlfluff.pythonPath": "/usr/bin/python3",
+     "sqlfluff.excludeRules": ["L027"]
+   }
+   ```
+
+3. Format your SQL with Alt+Shift+F
+
+### Setup for Multiple Dialects
+
+Create separate configuration files:
+- `~/sqlfluff.snowflake` for Snowflake projects
+- `~/sqlfluff.tsql` for SQL Server projects
+
+Then specify in workspace settings:
+```json
+{
+  "sqlfluff.configPath": "${workspaceFolder}/.sqlfluff.snowflake"
+}
+```
+
+## Troubleshooting
+
+### "sqlfluff not found" Error
+
+1. Ensure sqlfluff is installed:
+   ```bash
+   pip install sqlfluff
+   ```
+
+2. Set the correct pythonPath or sqlfluffPath in settings:
+   - Windows: `C:\\Python39\\python.exe`
+   - macOS/Linux: `/usr/bin/python3`
+
+### "Format error: Permission denied"
+
+Make sure you have execute permissions:
+```bash
+chmod +x /path/to/sqlfluff
+```
+
+### Configuration Not Applied
+
+1. Check that `.sqlfluff` exists in the right location
+2. Verify the configuration file format
+3. Try specifying explicit `configPath` in settings
+
+## Common Sqlfluff Rules
+
+- **L001**: Inconsistent capitalisation of keywords
+- **L002**: Inconsistent capitalisation of function names
+- **L003**: Indentation not in multiples of indent_size
+- **L004**: Indentation size is not a multiple of indent_unit
+- **L005**: Indentation is in tabs rather than spaces
+- **L009**: Files must end with a newline
+- **L010**: Comments should start with space after hash
+- **L011**: Unused alias (select statement)
+- **L012**: Aliases in join conditions should be qualified
+
+See [sqlfluff documentation](https://docs.sqlfluff.com/en/stable/reference/rules.html) for complete rule reference.
+
+## Requirements
+
+- VS Code 1.60.0 or higher
+- Python 3.7 or higher
+- sqlfluff 1.0.0 or higher (for full compatibility with this extension)
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues on the repository.
+
+## Support
+
+For issues, feature requests, or questions:
+- Check the [troubleshooting section](#troubleshooting)
+- Review [sqlfluff documentation](https://docs.sqlfluff.com/)
+- Open an issue on the GitHub repository
