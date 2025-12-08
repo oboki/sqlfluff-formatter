@@ -494,24 +494,35 @@ export class SQLFluffFormatter {
 	}
 
 	private resolveConfigPath(): string | null {
-		// Priority: workspace .sqlfluff > home directory .sqlfluff
-		// Check workspace root
+		// Priority: workspace .sqlfluff > ~/.sqlfluff > extension default .sqlfluff.default
+		
+		// 1. Check workspace root
 		if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
 			const workspaceConfigPath = path.join(
 				vscode.workspace.workspaceFolders[0].uri.fsPath,
 				'.sqlfluff'
 			);
 			if (fs.existsSync(workspaceConfigPath)) {
+				console.log('[SQLFluff Config] Using workspace config:', workspaceConfigPath);
 				return workspaceConfigPath;
 			}
 		}
 
-		// Check home directory
+		// 2. Check home directory
 		const homeConfigPath = path.join(os.homedir(), '.sqlfluff');
 		if (fs.existsSync(homeConfigPath)) {
+			console.log('[SQLFluff Config] Using home directory config:', homeConfigPath);
 			return homeConfigPath;
 		}
 
+		// 3. Use extension's default config as fallback
+		const extensionDefaultPath = path.join(__dirname, '..', '.sqlfluff.default');
+		if (fs.existsSync(extensionDefaultPath)) {
+			console.log('[SQLFluff Config] Using extension default config:', extensionDefaultPath);
+			return extensionDefaultPath;
+		}
+
+		console.log('[SQLFluff Config] No configuration file found, sqlfluff will use its own defaults');
 		return null;
 	}
 }

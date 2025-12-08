@@ -128,53 +128,96 @@ SQLFluff supports many SQL dialects. Choose the one that matches your database s
 
 If you see "[1 templating/parsing errors found" messages:
 
-1. **Check your dialect**: Ensure the `.sqlfluff` configuration matches your SQL database
+1. **Check your templater setting**: By default, the extension uses Jinja2 templating
+   - If your SQL doesn't use templates (dbt, Jinja, etc.), set `templater = raw` in your `.sqlfluff`
+   - Example: `templater = raw` in workspace `.sqlfluff` file
+
+2. **Check your dialect**: Ensure the `.sqlfluff` configuration matches your SQL database
    - Example: If using Snowflake syntax like `INSERT OVERWRITE`, set dialect to `snowflake` in ~/.sqlfluff
    - If using `DECLARE` (T-SQL), set dialect to `tsql` in ~/.sqlfluff
 
-2. **Try a different dialect**: Some SQL features are only supported in specific dialects
+3. **Try a different dialect**: Some SQL features are only supported in specific dialects
    - If ANSI dialect fails, try `postgresql` or your actual database system
 
-3. **Update your .sqlfluff file**: Set the correct dialect in your configuration:
+4. **Update your .sqlfluff file**: Set the correct dialect in your configuration:
    ```ini
    [sqlfluff]
    dialect = snowflake
    templater = raw
    ```
 
-4. **Use proper configuration location**: 
+5. **Use proper configuration location**: 
    - Workspace root `.sqlfluff` takes priority over home directory config
    - Home directory `~/.sqlfluff` provides global defaults
+
+## Jinja2 Template Support
+
+The extension can support **Jinja2 templating**, which is useful if you:
+- Use **dbt** for data transformations
+- Have SQL files with Jinja template variables (e.g., `{{ variable_name }}`)
+- Use template inheritance or macros in your SQL
+
+By default, the extension uses **raw templating** (no template processing) for maximum compatibility.
+
+### Enabling Jinja2
+
+To enable Jinja2 templating, add this to your `.sqlfluff` (workspace or home directory):
+
+```ini
+[sqlfluff]
+templater = jinja
+
+[sqlfluff:templater:jinja]
+apply_dbt_macros = False
+```
+
+### Using dbt Macros
+
+If you're using dbt and want the formatter to understand dbt-specific syntax:
+
+```ini
+[sqlfluff]
+templater = jinja
+
+[sqlfluff:templater:jinja]
+apply_dbt_macros = True
+```
+
+Note: This requires dbt to be installed in your Python environment.
 
 ## Configuration Files
 
 ### Global Configuration (~/.sqlfluff)
 
-Create a `.sqlfluff` file in your home directory for global SQL formatting rules:
+You can customize the formatter globally by creating a `.sqlfluff` file in your home directory. Example:
 
 ```ini
 [sqlfluff]
-dialect = postgresql
+dialect = postgresql      # Change to your default SQL dialect
 indent_unit = space
 indent_size = 2
+max_line_length = 88
 
 [sqlfluff:rules]
-L001 = { "capitalisation_policy" : "upper" }
-L003 = { "indent_size" : 2 }
+L001 = { "capitalisation_policy" : "upper" }  # UPPERCASE keywords
+L002 = { "capitalisation_policy" : "upper" }  # UPPERCASE functions
+L003 = { "indent_size" : 2 }                   # 2-space indentation
+
+# Enable Jinja2 if you use dbt or template engines
+# [sqlfluff]
+# templater = jinja
 ```
+
+This global configuration applies to all your SQL projects unless overridden by a workspace-specific `.sqlfluff` file.
 
 ### Local Configuration (.sqlfluff in workspace)
 
-Create a `.sqlfluff` file in your workspace root for project-specific rules:
+Override the global settings for specific projects by creating a `.sqlfluff` in your workspace root:
 
 ```ini
 [sqlfluff]
-dialect = snowflake
-indent_unit = space
-indent_size = 4
-
-[sqlfluff:indentation]
-indent_unit = space
+dialect = snowflake      # Change dialect for this project
+templater = raw          # Or keep jinja if needed
 indent_size = 4
 
 [sqlfluff:rules]
@@ -198,12 +241,38 @@ Override rules for specific projects in `.vscode/settings.json`:
 
 ## Configuration Priority
 
-The extension resolves `.sqlfluff` configuration files in this order:
+The extension resolves `.sqlfluff` configuration files in this order (highest to lowest priority):
 
 1. **Workspace config** (`.sqlfluff` in workspace root)
-2. **Home directory config** (`~/.sqlfluff`)
+   - Project-specific formatting rules
+   - Use this to override settings for a specific project
 
-The first configuration file found is used. If no configuration file exists, sqlfluff uses its defaults.
+2. **Home directory config** (`~/.sqlfluff`)
+   - Your personal formatting preferences
+   - Applies to all projects where workspace config doesn't exist
+
+3. **Extension default config** (`.sqlfluff.default` bundled with extension)
+   - Built-in fallback configuration
+   - Ensures consistent formatting even without any custom config files
+   - Uses ANSI SQL and raw templating (no templates) by default for maximum compatibility
+
+4. **sqlfluff internal defaults**
+   - Used only if all above configurations are missing
+
+### Quick Setup
+
+**Zero-config option:** Just install the extension!
+- The extension's built-in configuration provides sensible defaults for most SQL projects
+- No Jinja2 templates by default - safe and compatible with any SQL
+
+**Customize for your environment:** Create `~/.sqlfluff` in your home directory
+- Overrides the extension's defaults globally
+- Applies to all your SQL projects
+
+**Project-specific rules:** Create `.sqlfluff` in your workspace root
+- Overrides both home directory and extension defaults
+- Useful for team standards or specific project requirements
+- Example: Enable Jinja2 for dbt projects
 
 ## Example Workflows
 

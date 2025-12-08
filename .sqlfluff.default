@@ -1,0 +1,86 @@
+# SQLFluff default configuration for vscode-sqlfluff extension
+# This is the built-in fallback configuration used when no other .sqlfluff file is found
+# Priority: workspace .sqlfluff > ~/.sqlfluff > .sqlfluff.default (this file)
+
+[sqlfluff]
+# Use ANSI SQL as the default dialect (most portable)
+# Override with dialect = postgresql, mysql, tsql, snowflake, etc. in your .sqlfluff
+dialect = ansi
+
+# Use raw templater by default (no template processing)
+# Change to 'jinja' in your .sqlfluff if you use dbt or Jinja templates
+templater = raw
+
+# Basic formatting settings
+indent_unit = space
+indent_size = 2
+max_line_length = 88
+# Ensure files end with a newline
+require_final_newline = True
+
+[sqlfluff:rules]
+# L001 - Inconsistent capitalisation of keywords
+# Most teams prefer UPPERCASE for SQL keywords
+L001 = { "capitalisation_policy" : "upper" }
+
+# L002 - Inconsistent capitalisation of function names
+# Consistent with L001
+L002 = { "capitalisation_policy" : "upper" }
+
+# L003 - Indentation not in multiples of indent_size
+# Ensures consistent indentation
+L003 = { "indent_size" : 2 }
+
+# L004 - Indentation size is not a multiple of indent_unit
+L004 = { }
+
+# L005 - Indentation is using tabs instead of spaces
+L005 = { }
+
+# L009 - Files should end with a newline
+# Disabled by default as preference varies by project
+# Uncomment to enforce: L009 = { "select_clause_trailing_comma" : "forbid" }
+
+# L010 - Comments should start with space after hash
+# Disabled by default; enable in project .sqlfluff if needed
+# L010 = { "comment_style" : "hash" }
+
+# L011 - Unused alias
+# Disabled - false positives are common
+# L011 = { }
+
+# L012 - Aliases in join should be qualified
+# Important for readability
+L012 = { }
+
+# L013 - Inconsistent use of tabs vs spaces
+L013 = { }
+
+# L014 - Inconsistent leading whitespace
+L014 = { }
+
+# L015 - Inconsistent capitalisation of types
+L015 = { "capitalisation_policy" : "upper" }
+
+# L019 - Unnecessary whitespace
+L019 = { }
+
+# Exclude certain rules that are often too strict or cause false positives
+exclude_rules = L016,L031,L034
+# L016 - Line too long (comment lines can naturally be long)
+# L031 - Avoid aliases in predicates (too restrictive)
+# L034 - Unnecessary join conditions (sometimes unavoidable)
+
+# Indentation configuration
+[sqlfluff:indentation]
+indent_unit = space
+indent_size = 2
+# Hanging indent for readability
+hanging_indent = True
+# Don't indent the first SELECT item (more compact)
+indent_first_select_item = False
+
+# Layout configuration for better readability
+[sqlfluff:layout:type:comma]
+spacing_before = forbid
+spacing_after = single
