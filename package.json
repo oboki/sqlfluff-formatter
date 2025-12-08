@@ -55,32 +55,6 @@
             "default": "sqlfluff",
             "description": "Path to sqlfluff executable (e.g., /usr/local/bin/sqlfluff or just sqlfluff)"
           },
-          "sqlfluff.configPath": {
-            "type": "string",
-            "default": "",
-            "description": "Path to .sqlfluff configuration file. If empty, uses workspace root or home directory config"
-          },
-          "sqlfluff.dialect": {
-            "type": "string",
-            "default": "ansi",
-            "description": "SQL dialect (ansi, tsql, mysql, postgresql, snowflake, bigquery, etc.)",
-            "enum": [
-              "ansi",
-              "tsql",
-              "mysql",
-              "postgresql",
-              "snowflake",
-              "bigquery",
-              "oracle",
-              "redshift",
-              "duckdb",
-              "sparksql",
-              "exasol",
-              "hive",
-              "trino",
-              "presto"
-            ]
-          },
           "sqlfluff.rules": {
             "type": "object",
             "default": {},

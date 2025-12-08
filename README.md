@@ -36,9 +36,7 @@ Add these settings to your VS Code `settings.json`:
 ```json
 {
   "sqlfluff.pythonPath": "python",
-  "sqlfluff.sqlfluffPath": "sqlfluff",
-  "sqlfluff.dialect": "ansi",
-  "sqlfluff.configPath": ""
+  "sqlfluff.sqlfluffPath": "sqlfluff"
 }
 ```
 
@@ -70,13 +68,6 @@ The extension tries three execution methods in priority order:
 
 - **sqlfluffPath**: Path to sqlfluff executable (default: "sqlfluff")
    - Example: `/usr/local/bin/sqlfluff`
-   
-- **dialect**: SQL dialect to use (default: "ansi")
-  - Options: `ansi`, `tsql`, `mysql`, `postgresql`, `snowflake`, `bigquery`, `oracle`, `redshift`, `duckdb`, `sparksql`, `exasol`, `hive`, `trino`, `presto`
-   
-- **configPath**: Path to .sqlfluff configuration file
-  - If empty, uses `.sqlfluff` in workspace root or home directory
-  - Example: `${workspaceFolder}/.sqlfluff` or `/home/user/.sqlfluff`
    
 - **rules**: Override specific sqlfluff rules
   - Example:
@@ -137,14 +128,14 @@ SQLFluff supports many SQL dialects. Choose the one that matches your database s
 
 If you see "[1 templating/parsing errors found" messages:
 
-1. **Check your dialect**: Ensure the `sqlfluff.dialect` setting matches your SQL database
-   - Example: If using Snowflake syntax like `INSERT OVERWRITE`, set dialect to `snowflake`
-   - If using `DECLARE` (T-SQL), set dialect to `tsql`
+1. **Check your dialect**: Ensure the `.sqlfluff` configuration matches your SQL database
+   - Example: If using Snowflake syntax like `INSERT OVERWRITE`, set dialect to `snowflake` in ~/.sqlfluff
+   - If using `DECLARE` (T-SQL), set dialect to `tsql` in ~/.sqlfluff
 
 2. **Try a different dialect**: Some SQL features are only supported in specific dialects
    - If ANSI dialect fails, try `postgresql` or your actual database system
 
-3. **Update your .sqlfluff file**: Set the correct dialect in your `.sqlfluff` configuration:
+3. **Update your .sqlfluff file**: Set the correct dialect in your configuration:
    ```ini
    [sqlfluff]
    dialect = snowflake
@@ -153,7 +144,7 @@ If you see "[1 templating/parsing errors found" messages:
 
 4. **Use proper configuration location**: 
    - Workspace root `.sqlfluff` takes priority over home directory config
-   - VS Code setting `sqlfluff.dialect` overrides all .sqlfluff files
+   - Home directory `~/.sqlfluff` provides global defaults
 
 ## Configuration Files
 
@@ -197,7 +188,6 @@ Override rules for specific projects in `.vscode/settings.json`:
 
 ```json
 {
-  "sqlfluff.dialect": "postgresql",
   "sqlfluff.pythonPath": "/usr/bin/python3",
   "sqlfluff.excludeRules": ["L009", "L027"],
   "sqlfluff.rules": {
@@ -208,12 +198,12 @@ Override rules for specific projects in `.vscode/settings.json`:
 
 ## Configuration Priority
 
-The extension resolves configuration in this order:
+The extension resolves `.sqlfluff` configuration files in this order:
 
-1. **Explicit config path** (`sqlfluff.configPath` in VS Code settings)
-2. **Workspace config** (`.sqlfluff` in workspace root)
-3. **Home directory config** (`~/.sqlfluff`)
-4. **VS Code settings** (`sqlfluff.*` in settings.json)
+1. **Workspace config** (`.sqlfluff` in workspace root)
+2. **Home directory config** (`~/.sqlfluff`)
+
+The first configuration file found is used. If no configuration file exists, sqlfluff uses its defaults.
 
 ## Example Workflows
 
@@ -239,16 +229,11 @@ The extension resolves configuration in this order:
 
 ### Setup for Multiple Dialects
 
-Create separate configuration files:
-- `~/sqlfluff.snowflake` for Snowflake projects
-- `~/sqlfluff.tsql` for SQL Server projects
+Create separate `.sqlfluff` files in different workspace directories:
+- Create `.sqlfluff` in your Snowflake project with `dialect = snowflake`
+- Create `.sqlfluff` in your SQL Server project with `dialect = tsql`
 
-Then specify in workspace settings:
-```json
-{
-  "sqlfluff.configPath": "${workspaceFolder}/.sqlfluff.snowflake"
-}
-```
+Each project's `.sqlfluff` file will be used based on the workspace root.
 
 ## Troubleshooting
 
@@ -272,9 +257,9 @@ chmod +x /path/to/sqlfluff
 
 ### Configuration Not Applied
 
-1. Check that `.sqlfluff` exists in the right location
-2. Verify the configuration file format
-3. Try specifying explicit `configPath` in settings
+1. Check that `.sqlfluff` exists in workspace root or home directory
+2. Verify the configuration file format (INI format, not JSON)
+3. Check file permissions to ensure it's readable
 
 ## Common Sqlfluff Rules
 

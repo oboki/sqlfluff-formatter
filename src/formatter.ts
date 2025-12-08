@@ -7,7 +7,6 @@ import { spawn } from 'child_process';
 export class SQLFluffFormatter {
 	private pythonPath: string;
 	private sqlfluffPath: string;
-	private configPath: string | null;
 
 	constructor() {
 		this.loadConfig();
@@ -18,8 +17,6 @@ export class SQLFluffFormatter {
 
 		this.pythonPath = config.get('pythonPath') || 'python';
 		this.sqlfluffPath = config.get('sqlfluffPath') || 'sqlfluff';
-		const configPathSetting = config.get('configPath') as string | undefined;
-		this.configPath = configPathSetting && configPathSetting.trim() ? configPathSetting.trim() : null;
 	}
 
 	public async formatDocument(
@@ -365,8 +362,9 @@ export class SQLFluffFormatter {
 									outputChannel.appendLine(stderr);
 									outputChannel.appendLine('─'.repeat(60));
 									outputChannel.appendLine('');
-									outputChannel.appendLine('💡 Try changing the dialect in VS Code settings:');
-									outputChannel.appendLine('  "sqlfluff.dialect": "hive" // or "snowflake", "postgresql", etc.');
+									outputChannel.appendLine('💡 Try updating the dialect in ~/.sqlfluff:');
+									outputChannel.appendLine('  [core]');
+									outputChannel.appendLine('  dialect = hive  # or snowflake, postgresql, etc.');
 									outputChannel.appendLine('');
 								}
 								try { fs.unlinkSync(tmpFile); } catch (e) {}
@@ -385,8 +383,9 @@ export class SQLFluffFormatter {
 							outputChannel.appendLine(stderr);
 							outputChannel.appendLine('─'.repeat(60));
 							outputChannel.appendLine('');
-							outputChannel.appendLine('💡 Try changing the dialect in VS Code settings:');
-							outputChannel.appendLine('  "sqlfluff.dialect": "hive" // or "snowflake", "postgresql", etc.');
+							outputChannel.appendLine('💡 Try updating the dialect in ~/.sqlfluff:');
+							outputChannel.appendLine('  [core]');
+							outputChannel.appendLine('  dialect = hive  # or snowflake, postgresql, etc.');
 							outputChannel.appendLine('');
 						}
 						if (stderr) {
@@ -419,7 +418,7 @@ export class SQLFluffFormatter {
 			fs.writeFileSync(tmpFile, sql, 'utf-8');
 			
 			console.log('[SQLFluff Lint] Executing:', cmd, ...args, tmpFile);
-			// args already contains ['lint', '--dialect', 'ansi', ...] so just append the file path
+			// args are prepared by buildCliArgs(), just append the file path
 			const process = spawn(cmd, [...args, tmpFile], {
 				stdio: ['pipe', 'pipe', 'pipe']
 			});
@@ -469,11 +468,6 @@ export class SQLFluffFormatter {
 		const args: string[] = [];
 		const config = vscode.workspace.getConfiguration('sqlfluff');
 
-		// Add dialect
-		const dialect = config.get('dialect') || 'ansi';
-		args.push('--dialect');
-		args.push(dialect);
-
 		// Add excluded rules
 		const excludeRules = config.get('excludeRules') as string[] || [];
 		if (excludeRules.length > 0) {
@@ -500,11 +494,7 @@ export class SQLFluffFormatter {
 	}
 
 	private resolveConfigPath(): string | null {
-		// Priority: explicit config path > workspace .sqlfluff > home directory .sqlfluff
-		if (this.configPath) {
-			return this.configPath;
-		}
-
+		// Priority: workspace .sqlfluff > home directory .sqlfluff
 		// Check workspace root
 		if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
 			const workspaceConfigPath = path.join(
