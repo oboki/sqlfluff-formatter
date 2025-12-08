@@ -1,8 +1,8 @@
 {
   "name": "sqlfluff-formatter",
   "displayName": "SQLFluff Formatter",
-  "description": "Professional SQL code formatter powered by sqlfluff. Format selected text or entire files with support for 14+ SQL dialects. Configurable via .sqlfluff files or VS Code settings.",
-  "version": "0.1.2",
+  "description": "VS Code extension for formatting SQL files using sqlfluff. Configurable via .sqlfluff files or VS Code settings.",
+  "version": "0.1.3",
   "icon": "img/sqlfluff.png",
   "engines": {
     "vscode": "^1.60.0"
