@@ -79,8 +79,3 @@ indent_size = 2
 hanging_indent = True
 # Don't indent the first SELECT item (more compact)
 indent_first_select_item = False
-
-# Layout configuration for better readability
-[sqlfluff:layout:type:comma]
-spacing_before = forbid
-spacing_after = single

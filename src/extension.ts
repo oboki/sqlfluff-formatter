@@ -12,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create output channel for lint results
 	outputChannel = vscode.window.createOutputChannel('SQLFluff');
 
-	formatter = new SQLFluffFormatter();
+	formatter = new SQLFluffFormatter(context.extensionPath);
 
 	// Register the format command
 	let disposable = vscode.commands.registerCommand('sqlfluff-formatter.formatSQL', async () => {

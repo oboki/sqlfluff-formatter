@@ -7,8 +7,10 @@ import { spawn } from 'child_process';
 export class SQLFluffFormatter {
 	private pythonPath: string;
 	private sqlfluffPath: string;
+	private extensionPath: string;
 
-	constructor() {
+	constructor(extensionPath?: string) {
+		this.extensionPath = extensionPath || __dirname;
 		this.loadConfig();
 	}
 
@@ -175,7 +177,7 @@ export class SQLFluffFormatter {
 		outputChannel?: vscode.OutputChannel
 	): void {
 		try {
-			const args = this.buildFixArgs();
+			const args = this.buildFixArgs(outputChannel);
 			console.log('[SQLFluff] Executing:', this.sqlfluffPath, 'fix', ...args, tmpFile);
 			
 			// Format the file in-place
@@ -247,7 +249,7 @@ export class SQLFluffFormatter {
 						
 						// Show lint results (async, doesn't block formatting)
 						if (outputChannel) {
-							this.runLint(this.sqlfluffPath, ['lint', ...this.buildLintArgs()], sql, outputChannel);
+							this.runLint(this.sqlfluffPath, ['lint', ...this.buildLintArgs(outputChannel)], sql, outputChannel);
 						}
 						
 						try { fs.unlinkSync(tmpFile); } catch (e) {}
@@ -464,7 +466,7 @@ export class SQLFluffFormatter {
 		}
 	}
 
-	private buildCliArgs(): string[] {
+	private buildCliArgs(outputChannel?: vscode.OutputChannel): string[] {
 		const args: string[] = [];
 		const config = vscode.workspace.getConfiguration('sqlfluff');
 
@@ -475,54 +477,66 @@ export class SQLFluffFormatter {
 			args.push(excludeRules.join(','));
 		}
 
-		// Add common options
+		const configPath = this.resolveConfigPath(outputChannel);
+		if (configPath) {
+			args.push('--config');
+			args.push(configPath);
+		}
 		args.push('--nocolor');  // Disable colored output
 
 		return args;
 	}
 
-	private buildFixArgs(): string[] {
-		const args = this.buildCliArgs();
+	private buildFixArgs(outputChannel?: vscode.OutputChannel): string[] {
+		const args = this.buildCliArgs(outputChannel);
 		args.push('--force');    // Auto-accept changes without prompting (fix only)
 		return args;
 	}
 
-	private buildLintArgs(): string[] {
-		const args = this.buildCliArgs();
+	private buildLintArgs(outputChannel?: vscode.OutputChannel): string[] {
+		const args = this.buildCliArgs(outputChannel);
 		// Lint-specific options (no --force)
 		return args;
 	}
 
-	private resolveConfigPath(): string | null {
+	private resolveConfigPath(outputChannel?: vscode.OutputChannel): string | null {
 		// Priority: workspace .sqlfluff > ~/.sqlfluff > extension default .sqlfluff.default
-		
+		let configPath: string | null = null;
+
 		// 1. Check workspace root
 		if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
 			const workspaceConfigPath = path.join(
 				vscode.workspace.workspaceFolders[0].uri.fsPath,
 				'.sqlfluff'
 			);
+			if (outputChannel) {
+				outputChannel.appendLine(`[DEBUG] workspaceConfigPath: ${workspaceConfigPath}`);
+				outputChannel.appendLine(`[DEBUG] exists: ${fs.existsSync(workspaceConfigPath)}`);
+			}
 			if (fs.existsSync(workspaceConfigPath)) {
-				console.log('[SQLFluff Config] Using workspace config:', workspaceConfigPath);
-				return workspaceConfigPath;
+				configPath = workspaceConfigPath;
+				if (outputChannel) outputChannel.appendLine(`[SQLFluff Config] Using workspace config: ${workspaceConfigPath}`);
+				return configPath;
 			}
 		}
 
 		// 2. Check home directory
 		const homeConfigPath = path.join(os.homedir(), '.sqlfluff');
 		if (fs.existsSync(homeConfigPath)) {
-			console.log('[SQLFluff Config] Using home directory config:', homeConfigPath);
-			return homeConfigPath;
+			configPath = homeConfigPath;
+			if (outputChannel) outputChannel.appendLine(`[SQLFluff Config] Using home directory config: ${homeConfigPath}`);
+			return configPath;
 		}
 
 		// 3. Use extension's default config as fallback
-		const extensionDefaultPath = path.join(__dirname, '..', '.sqlfluff.default');
+		const extensionDefaultPath = path.join(this.extensionPath, '.sqlfluff.default');
 		if (fs.existsSync(extensionDefaultPath)) {
-			console.log('[SQLFluff Config] Using extension default config:', extensionDefaultPath);
-			return extensionDefaultPath;
+			configPath = extensionDefaultPath;
+			if (outputChannel) outputChannel.appendLine(`[SQLFluff Config] Using extension default config: ${extensionDefaultPath}`);
+			return configPath;
 		}
 
-		console.log('[SQLFluff Config] No configuration file found, sqlfluff will use its own defaults');
+		if (outputChannel) outputChannel.appendLine(`[SQLFluff Config] No configuration file found, sqlfluff will use its own defaults`);
 		return null;
 	}
 }
