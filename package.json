@@ -1,0 +1,67 @@
+{
+  "name": "sqlfluff-formatter",
+  "displayName": "SQLFluff Formatter",
+  "description": "Format SQL files using a local sqlfluff executable",
+  "version": "0.2.0",
+  "icon": "img/sqlfluff.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Formatters"
+  ],
+  "keywords": [
+    "sql",
+    "sqlfluff",
+    "formatter",
+    "linter"
+  ],
+  "publisher": "oboki",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oboki/sqlfluff-formatter"
+  },
+  "activationEvents": [
+    "onCommand:sqlfluff.format"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sqlfluff.format",
+        "title": "Format SQL with SQLFluff"
+      }
+    ],
+    "configuration": {
+      "title": "SQLFluff",
+      "properties": {
+        "sqlfluff.path": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the sqlfluff executable. If not set, sqlfluff will be searched in PATH."
+        },
+        "sqlfluff.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments to pass to sqlfluff"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.19.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
