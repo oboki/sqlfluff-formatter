@@ -32,6 +32,14 @@
         "title": "Format SQL with SQLFluff"
       }
     ],
+    "keybindings": [
+      {
+        "command": "sqlfluff.format",
+        "key": "shift+alt+s",
+        "when": "editorTextFocus",
+        "mac": "shift+ctrl+s"
+      }
+    ],
     "configuration": {
       "title": "SQLFluff",
       "properties": {
