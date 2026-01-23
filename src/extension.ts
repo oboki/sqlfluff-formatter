@@ -44,6 +44,9 @@ async function formatSqlWithSqlfluff() {
     const textToFormat = document.getText(range);
     const eol = document.eol === vscode.EndOfLine.LF ? '\n' : '\r\n';
 
+    const docIndent = getIndentation(document.lineAt(range.start.line).text);
+    const selIndent = getIndentation(textToFormat);
+
     outputChannel.appendLine('-----------------------------');
     outputChannel.appendLine(`Formatting ${isSelection ? 'selection' : 'entire document'}`);
     outputChannel.appendLine(`Document: ${document.uri.fsPath}`);
@@ -51,7 +54,8 @@ async function formatSqlWithSqlfluff() {
     let tempFilePath: string | undefined;
 
     try {
-        tempFilePath = createTempFile(textToFormat);
+        const textWithoutIndent = removeFirstLineIndent(textToFormat, selIndent);
+        tempFilePath = createTempFile(textWithoutIndent);
         outputChannel.appendLine(`Temp file: ${tempFilePath}`);
 
         const configPath = findSqlfluffConfig(document);
@@ -63,7 +67,8 @@ async function formatSqlWithSqlfluff() {
 
         const finalArgs = ensureDialect(additionalArgs, configPath);
         const formattedText = await runSqlfluff(sqlfluffPath, tempFilePath, configPath, finalArgs);
-        const normalizedText = normalizeEol(formattedText, eol);
+        const textWithIndent = applyIndent(formattedText, selIndent, docIndent);
+        const normalizedText = normalizeEol(textWithIndent, eol);
 
         await editor.edit((editBuilder) => {
             editBuilder.replace(range, normalizedText);
@@ -150,6 +155,29 @@ function quotePath(p: string): string {
 function normalizeEol(text: string, targetEol: string): string {
     const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     return targetEol === '\r\n' ? normalized.replace(/\n/g, '\r\n') : normalized;
+}
+
+function getIndentation(text: string): string {
+    const firstLine = text.split(/\r?\n/)[0];
+    const match = firstLine.match(/^(\s*)/);
+    return match ? match[1] : '';
+}
+
+function removeFirstLineIndent(text: string, indent: string): string {
+    if (!indent) return text;
+    const lines = text.split(/\r?\n/);
+    if (lines[0].startsWith(indent)) {
+        lines[0] = lines[0].substring(indent.length);
+    }
+    return lines.join('\n');
+}
+
+function applyIndent(text: string, firstIndent: string, otherIndent: string): string {
+    const lines = text.split(/\r?\n/);
+    return lines.map((line, i) => {
+        if (line.trim().length === 0) return line;
+        return (i === 0 ? firstIndent : otherIndent) + line;
+    }).join('\n');
 }
 
 function ensureDialect(args: string[], configPath: string | null): string[] {
