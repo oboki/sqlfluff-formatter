@@ -12,7 +12,16 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel = vscode.window.createOutputChannel('SQLFluff');
 
     const disposable = vscode.commands.registerCommand('sqlfluff.format', async () => {
-        await formatSqlWithSqlfluff();
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Formatting SQL...',
+                cancellable: false
+            },
+            async () => {
+                await formatSqlWithSqlfluff();
+            }
+        );
     });
 
     context.subscriptions.push(disposable, outputChannel);
