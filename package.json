@@ -2,7 +2,7 @@
   "name": "sqlfluff-formatter",
   "displayName": "SQLFluff Formatter",
   "description": "Format SQL files using a local sqlfluff executable",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "icon": "img/sqlfluff.png",
   "engines": {
     "vscode": "^1.75.0"
