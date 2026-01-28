@@ -103,7 +103,16 @@ async function formatSqlWithSqlfluff() {
             editBuilder.replace(range, normalizedText);
         });
 
-        outputChannel.appendLine('Formatting completed successfully.');
+        outputChannel.appendLine('Formatting completed.');
+
+        vscode.window.showInformationMessage(
+            'SQLFluff formatting completed. To see details, click below.',
+            'Open Output Panel'
+        ).then(selection => {
+            if (selection === 'Open Output Panel') {
+                outputChannel.show(true);
+            }
+        });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`SQLFluff formatting failed: ${errorMessage}`);
@@ -201,7 +210,6 @@ async function runSqlfluff(
         if (stdout) outputChannel.appendLine(`STDOUT: ${stdout}`);
 
         if (exitCode == 1) {
-            outputChannel.appendLine('Files were fixed successfully (exit code 1 is normal)');
             return fs.readFileSync(filePath, { encoding: 'utf-8' });
         }
 
