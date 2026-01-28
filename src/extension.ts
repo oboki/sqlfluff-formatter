@@ -94,15 +94,8 @@ async function formatSqlWithSqlfluff() {
         tempFilePath = createTempFile(textWithoutIndent);
         outputChannel.appendLine(`Temp file: ${tempFilePath}`);
 
-        const configPath = findSqlfluffConfig(document);
-        if (configPath) {
-            outputChannel.appendLine(`Using config: ${configPath}`);
-        } else {
-            outputChannel.appendLine('No .sqlfluff config found, using default settings.');
-        }
-
-        const finalArgs = ensureDialect(additionalArgs, configPath);
-        const formattedText = await runSqlfluff(sqlfluffPath, tempFilePath, configPath, finalArgs);
+        const finalArgs = ensureDialect(additionalArgs);
+        const formattedText = await runSqlfluff(sqlfluffPath, tempFilePath, finalArgs);
         const textWithIndent = applyIndent(formattedText, selIndent, docIndent);
         const normalizedText = normalizeEol(textWithIndent, eol);
 
@@ -169,14 +162,9 @@ function createTempFile(content: string): string {
 async function runSqlfluff(
     sqlfluffPath: string,
     filePath: string,
-    configPath: string | null,
     additionalArgs: string[]
 ): Promise<string> {
     const args: string[] = ['fix', quotePath(filePath), '-f'];
-
-    if (configPath) {
-        args.push('--config', quotePath(configPath));
-    }
 
     if (additionalArgs.length > 0) {
         args.push(...additionalArgs);
@@ -252,9 +240,7 @@ function applyIndent(text: string, firstIndent: string, otherIndent: string): st
     }).join('\n');
 }
 
-function ensureDialect(args: string[], configPath: string | null): string[] {
-    if (configPath) return args;
-
+function ensureDialect(args: string[]): string[] {
     const hasDialect = args.some((arg, index) => {
         return arg === '--dialect' || arg === '-d' ||
             (index > 0 && (args[index - 1] === '--dialect' || args[index - 1] === '-d'));
@@ -264,18 +250,4 @@ function ensureDialect(args: string[], configPath: string | null): string[] {
 
     outputChannel.appendLine('No SQLFluff dialect specified. Using default: ansi');
     return [...args, '--dialect', 'ansi']
-}
-
-function findSqlfluffConfig(document: vscode.TextDocument): string | null {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) return null;
-
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri) || workspaceFolders[0];
-    const projectConfigPath = path.join(folder.uri.fsPath, '.sqlfluff');
-    if (fs.existsSync(projectConfigPath)) return projectConfigPath;
-
-    const homeConfigPath = path.join(os.homedir(), '.sqlfluff');
-    if (fs.existsSync(homeConfigPath)) return homeConfigPath;
-
-    return null;
 }
