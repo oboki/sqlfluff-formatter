@@ -38,8 +38,35 @@ async function formatSqlWithSqlfluff() {
 
     const document = editor.document;
     const config = vscode.workspace.getConfiguration('sqlfluff');
-    const sqlfluffPath = config.get<string>('path', '') || 'sqlfluff';
+    let sqlfluffPath = config.get<string>('path', '') || 'sqlfluff';
     const additionalArgs = config.get<string[]>('args', []);
+
+    if (!(await commandExists(sqlfluffPath))) {
+        outputChannel.appendLine(`sqlfluff not found at "${sqlfluffPath}".`);
+        const pythonPath = await findPython();
+        if (pythonPath) {
+            const consent = await vscode.window.showInformationMessage(
+                'sqlfluff command not found. Would you like to install the sqlfluff package to your python interpreter?',
+                'Install', 'Cancel'
+            );
+            if (consent === 'Install') {
+                const installResult = await installSqlfluffWithPython(pythonPath);
+                if (installResult) {
+                    outputChannel.appendLine('sqlfluff installation completed.');
+                    sqlfluffPath = 'sqlfluff';
+                } else {
+                    vscode.window.showErrorMessage('Failed to install sqlfluff.');
+                    return;
+                }
+            } else {
+                vscode.window.showWarningMessage('sqlfluff installation was cancelled.');
+                return;
+            }
+        } else {
+            vscode.window.showErrorMessage('Neither sqlfluff nor python interpreter could be found.');
+            return;
+        }
+    }
 
     const selection = editor.selection;
     const isSelection = !selection.isEmpty;
@@ -93,6 +120,42 @@ async function formatSqlWithSqlfluff() {
             fs.unlinkSync(tempFilePath);
             outputChannel.appendLine(`Temp file deleted: ${tempFilePath}`);
         }
+    }
+}
+
+async function commandExists(cmd: string): Promise<boolean> {
+    const checkCmd = process.platform === 'win32'
+        ? `where ${cmd}`
+        : `command -v ${cmd}`;
+    try {
+        await execAsync(checkCmd);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function findPython(): Promise<string | null> {
+    const candidates = ['python3', 'python'];
+    for (const cmd of candidates) {
+        if (await commandExists(cmd)) return cmd;
+    }
+    return null;
+}
+
+async function installSqlfluffWithPython(pythonPath: string): Promise<boolean> {
+    outputChannel.appendLine(`Installing sqlfluff using: ${pythonPath} -m pip install sqlfluff`);
+    try {
+        const { stdout, stderr } = await execAsync(`${pythonPath} -m pip install --user sqlfluff`, {
+            encoding: 'utf-8',
+            maxBuffer: 10 * 1024 * 1024,
+        });
+        outputChannel.appendLine(stdout);
+        if (stderr) outputChannel.appendLine(stderr);
+        return await commandExists('sqlfluff');
+    } catch (error: any) {
+        outputChannel.appendLine(`sqlfluff installation error: ${error.message}`);
+        return false;
     }
 }
 
