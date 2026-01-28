@@ -153,8 +153,15 @@ async function installSqlfluffWithPython(pythonPath: string): Promise<boolean> {
 }
 
 function createTempFile(content: string): string {
-    const tmpFileName = `sqlfluff_${Date.now()}_${Math.random().toString(36).substring(7)}.sql`;
-    const tmpFilePath = path.join(os.tmpdir(), tmpFileName);
+    const tmpFileName = `.sqlfluff_${Date.now()}_${Math.random().toString(36).substring(7)}.sql`;
+    let tmpDir: string;
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        tmpDir = workspaceFolders[0].uri.fsPath;
+    } else {
+        tmpDir = os.tmpdir();
+    }
+    const tmpFilePath = path.join(tmpDir, tmpFileName);
     fs.writeFileSync(tmpFilePath, content, { encoding: 'utf-8' });
     return tmpFilePath;
 }
