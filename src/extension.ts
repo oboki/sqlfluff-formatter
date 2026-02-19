@@ -94,7 +94,7 @@ async function formatSqlWithSqlfluff() {
         tempFilePath = createTempFile(textWithoutIndent);
         outputChannel.appendLine(`Temp file: ${tempFilePath}`);
 
-        const finalArgs = ensureDialect(additionalArgs);
+        const finalArgs = ensureDialect(additionalArgs, tempFilePath);
         const formattedText = await runSqlfluff(sqlfluffPath, tempFilePath, finalArgs);
         const textWithIndent = applyIndent(formattedText, selIndent, docIndent);
         const normalizedText = normalizeEol(textWithIndent, eol);
@@ -255,7 +255,7 @@ function applyIndent(text: string, firstIndent: string, otherIndent: string): st
     }).join('\n');
 }
 
-function ensureDialect(args: string[]): string[] {
+function ensureDialect(args: string[], tempFilePath: string): string[] {
     const hasDialect = args.some((arg, index) => {
         return arg === '--dialect' || arg === '-d' ||
             (index > 0 && (args[index - 1] === '--dialect' || args[index - 1] === '-d'));
@@ -263,6 +263,39 @@ function ensureDialect(args: string[]): string[] {
 
     if (hasDialect) return args;
 
-    outputChannel.appendLine('No SQLFluff dialect specified. Using default: ansi');
-    return [...args, '--dialect', 'ansi']
+    // Check if .sqlfluff file exists and has dialect configured
+    const hasDialectInConfig = checkSqlfluffConfig(tempFilePath);
+    if (hasDialectInConfig) {
+        outputChannel.appendLine('No dialect specified in args. Using dialect from .sqlfluff config.');
+        return args;
+    }
+
+    outputChannel.appendLine('No dialect found in args or .sqlfluff config. Using default: ansi');
+    return [...args, '--dialect', 'ansi'];
+}
+
+function checkSqlfluffConfig(tempFilePath: string): boolean {
+    try {
+        const dir = path.dirname(tempFilePath);
+        const homeDir = os.homedir();
+        
+        const locations = [
+            path.join(dir, '.sqlfluff'),      // 워크스페이스 폴더
+            path.join(homeDir, '.sqlfluff')   // 홈 디렉토리
+        ];
+
+        for (const sqlfluffPath of locations) {
+            if (fs.existsSync(sqlfluffPath)) {
+                const content = fs.readFileSync(sqlfluffPath, 'utf-8');
+                if (/^\s*dialect\s*=/m.test(content)) {
+                    outputChannel.appendLine(`Found dialect setting in: ${sqlfluffPath}`);
+                    return true;
+                }
+            }
+        }
+        return false;
+    } catch (error) {
+        outputChannel.appendLine(`Error checking .sqlfluff config: ${error}`);
+        return false;
+    }
 }
