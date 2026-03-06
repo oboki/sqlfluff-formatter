@@ -1,3 +1,5 @@
+.venv
+
 out
 node_modules
 *.vsix
