@@ -61,6 +61,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
+    "clean": "node -e \"const fs=require('fs'); for (const p of ['out','node_modules']) fs.rmSync(p,{recursive:true,force:true}); for (const f of fs.readdirSync('.')) if (f.endsWith('.vsix')) fs.rmSync(f,{force:true});\"",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile"
