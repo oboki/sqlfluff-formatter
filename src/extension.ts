@@ -38,11 +38,20 @@ async function formatSqlWithSqlfluff() {
 
     const document = editor.document;
     const config = vscode.workspace.getConfiguration('sqlfluff');
-    let sqlfluffPath = config.get<string>('path', '') || 'sqlfluff';
+    const configuredPath = (config.get<string>('path', '') || '').trim();
+    let sqlfluffPath = configuredPath || 'sqlfluff';
     const additionalArgs = config.get<string[]>('args', []);
 
     if (!(await commandExists(sqlfluffPath))) {
         outputChannel.appendLine(`sqlfluff not found at "${sqlfluffPath}".`);
+
+        if (configuredPath) {
+            vscode.window.showErrorMessage(
+                `sqlfluff.path is set but not executable: ${configuredPath}. Please fix the path or clear sqlfluff.path to use PATH lookup.`
+            );
+            return;
+        }
+
         const pythonPath = await findPython();
         if (pythonPath) {
             const consent = await vscode.window.showInformationMessage(
@@ -148,7 +157,7 @@ async function findPython(): Promise<string | null> {
 async function installSqlfluffWithPython(pythonPath: string): Promise<boolean> {
     outputChannel.appendLine(`Installing sqlfluff using: ${pythonPath} -m pip install sqlfluff`);
     try {
-        const { stdout, stderr } = await execAsync(`${pythonPath} -m pip install --user sqlfluff`, {
+        const { stdout, stderr } = await execAsync(`${pythonPath} -m pip install sqlfluff`, {
             encoding: 'utf-8',
             maxBuffer: 10 * 1024 * 1024,
         });
