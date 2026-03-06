@@ -8,6 +8,11 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 let outputChannel: vscode.OutputChannel;
 
+type InstallSqlfluffResult = {
+    success: boolean;
+    message: string;
+};
+
 export function activate(context: vscode.ExtensionContext) {
     outputChannel = vscode.window.createOutputChannel('SQLFluff');
 
@@ -60,11 +65,18 @@ async function formatSqlWithSqlfluff() {
             );
             if (consent === 'Install') {
                 const installResult = await installSqlfluffWithPython(pythonPath);
-                if (installResult) {
+                if (installResult.success) {
                     outputChannel.appendLine('sqlfluff installation completed.');
                     sqlfluffPath = 'sqlfluff';
                 } else {
-                    vscode.window.showErrorMessage('Failed to install sqlfluff.');
+                    vscode.window.showErrorMessage(
+                        installResult.message,
+                        'Open Output Panel'
+                    ).then(selection => {
+                        if (selection === 'Open Output Panel') {
+                            outputChannel.show(true);
+                        }
+                    });
                     return;
                 }
             } else {
@@ -154,7 +166,7 @@ async function findPython(): Promise<string | null> {
     return null;
 }
 
-async function installSqlfluffWithPython(pythonPath: string): Promise<boolean> {
+async function installSqlfluffWithPython(pythonPath: string): Promise<InstallSqlfluffResult> {
     outputChannel.appendLine(`Installing sqlfluff using: ${pythonPath} -m pip install sqlfluff`);
     try {
         const { stdout, stderr } = await execAsync(`${pythonPath} -m pip install sqlfluff`, {
@@ -163,10 +175,39 @@ async function installSqlfluffWithPython(pythonPath: string): Promise<boolean> {
         });
         outputChannel.appendLine(stdout);
         if (stderr) outputChannel.appendLine(stderr);
-        return await commandExists('sqlfluff');
+        const installed = await commandExists('sqlfluff');
+        if (installed) {
+            return {
+                success: true,
+                message: 'sqlfluff installation completed.'
+            };
+        }
+
+        return {
+            success: false,
+            message: 'sqlfluff was installed, but the command is not available in PATH yet. Restart VS Code or set sqlfluff.path explicitly.'
+        };
     } catch (error: any) {
-        outputChannel.appendLine(`sqlfluff installation error: ${error.message}`);
-        return false;
+        const stderr = error?.stderr ? String(error.stderr) : '';
+        const stdout = error?.stdout ? String(error.stdout) : '';
+        const errorMessage = error?.message ? String(error.message) : String(error);
+        const combined = `${errorMessage}\n${stderr}\n${stdout}`;
+
+        outputChannel.appendLine(`sqlfluff installation error: ${errorMessage}`);
+        if (stderr) outputChannel.appendLine(`STDERR: ${stderr}`);
+        if (stdout) outputChannel.appendLine(`STDOUT: ${stdout}`);
+
+        if (/No module named pip/i.test(combined)) {
+            return {
+                success: false,
+                message: 'Failed to install sqlfluff: pip is missing for this Python interpreter. Try `python3 -m ensurepip --upgrade` or install `python3-pip`, then retry.'
+            };
+        }
+
+        return {
+            success: false,
+            message: 'Failed to install sqlfluff. Check Python/pip availability and permissions, then retry.'
+        };
     }
 }
 
