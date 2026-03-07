@@ -10,6 +10,7 @@ This extension runs `sqlfluff fix` from VS Code and applies the formatted result
 - Uses your local sqlfluff installation and config
 - Works with any dialect supported by sqlfluff
 - Adds `--dialect ansi` automatically only when no dialect is provided in args or `.sqlfluff`
+- Resolves runtime in this order: `sqlfluff.path` → `sqlfluff` from PATH → `python -m sqlfluff`
 
 ## How It Works
 
@@ -23,7 +24,9 @@ This extension runs `sqlfluff fix` from VS Code and applies the formatted result
 1. Install this extension from the VS Code Marketplace.
 2. Open a SQL file and run the `Format SQL with SQLFluff` command (Shift+Alt+S).
    - If `sqlfluff.path` is set and not executable, the extension returns an error and does not try auto-install.
-   - If `sqlfluff.path` is not set and `sqlfluff` is not found in PATH, the extension can attempt to install `sqlfluff` automatically when Python is available.
+  - If `sqlfluff.path` is not set and `sqlfluff` is not found in PATH, the extension can attempt to install `sqlfluff` automatically when Python is available.
+  - During auto-install, the extension detects Python scripts directories and patches PATH only for extension processes (it does not modify your system shell profile).
+  - If CLI exposure still fails after install, the extension falls back to `python -m sqlfluff`.
    - If Python is not available, install Python and/or `sqlfluff` manually:
      ```bash
      pip install --upgrade sqlfluff
@@ -45,6 +48,7 @@ If formatting fails, open the `SQLFluff` output channel to see execution logs an
 - The extension uses your workspace or user `.sqlfluff` config if present.
 - You can set the path to `sqlfluff` and extra arguments in VS Code settings (`sqlfluff.path`, `sqlfluff.args`).
 - Auto-install uses `python -m pip install sqlfluff` (without `--user`).
+- If a workspace virtual environment is found (`.venv`, `venv`, `env`), that Python interpreter is preferred for auto-install.
 
 ### Example Settings
 
